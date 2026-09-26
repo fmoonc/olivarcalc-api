@@ -1,0 +1,89 @@
+# Spec §13.7: Pint -> Larastan -> Pest (with MySQL 8) -> export openapi.
+# Order matters; CI mirrors `composer ci` so a local run predicts the pipeline.
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: lint, analyse, test
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: olivarcalc_test
+          MYSQL_USER: olivarcalc
+          MYSQL_PASSWORD: olivarcalc
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uolivarcalc -polivarcalc"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+        # Spec §6: utf8mb4 is not MySQL's default.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_mysql, intl, bcmath, gd, zip, redis
+          coverage: none
+
+      - name: Cache Composer
+        uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: locked
+
+      - name: Copy environment
+        run: cp .env.example .env
+
+      # 1. Pint
+      - name: Lint (Pint)
+        run: composer lint
+
+      # 2. Larastan level 6 (spec §0.6)
+      - name: Analyse (Larastan)
+        run: composer analyse
+
+      # 3. Pest against MySQL 8
+      - name: Test (Pest)
+        run: composer test
+        env:
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: olivarcalc_test
+          REDIS_HOST: 127.0.0.1
+
+      # 4. Export the contract the web monorepo consumes (spec §3.3)
+      - name: Export OpenAPI contract
+        run: php artisan scramble:export --path=storage/app/openapi.json
+
+      - name: Upload openapi.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi
+          path: storage/app/openapi.json
+          if-no-files-found: error

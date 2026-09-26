@@ -1,0 +1,19 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    # Spec §0.6: Larastan level 6 minimum. Raise, never lower.
+    level: 6
+
+    paths:
+        - app
+        - database
+        - routes
+
+    # `tests` is deliberately excluded. Larastan cannot model Pest's `it()`
+    # closures, so every HTTP test reports a bogus "undefined method get()".
+    # Pest already runs those tests; static analysis targets application code.
+
+    # Our @property declarations describe runtime casts that the migration
+    # cannot express, so PHPDoc is advisory here rather than proof.
+    treatPhpDocTypesAsCertain: false
