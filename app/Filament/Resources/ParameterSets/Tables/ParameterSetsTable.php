@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\ParameterSets\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use App\Filament\Resources\ParameterSets\ParameterSetResource;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -15,36 +15,62 @@ class ParameterSetsTable
         return $table
             ->columns([
                 TextColumn::make('version')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold')
+                    ->fontFamily('mono'),
+
                 TextColumn::make('campaign')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('status')
-                    ->badge(),
+                    ->badge()
+                    ->color(fn ($state): string => $state->getColor())
+                    ->sortable(),
+
+                /**
+                 * The most useful number on this screen: how much work is left
+                 * before the set can go live (spec §5.2). Backed by
+                 * scopeWithUnverifiedCount, so it sorts without an N+1.
+                 */
+                TextColumn::make('unverified_count')
+                    ->label('Sin verificar')
+                    ->badge()
+                    ->color(fn (int $state): string => match (true) {
+                        $state === 0 => 'success',
+                        $state <= 3 => 'warning',
+                        default => 'danger',
+                    })
+                    ->formatStateUsing(fn (int $state): string => $state === 0 ? 'Todo listo' : (string) $state)
+                    ->sortable(),
+
+                TextColumn::make('parameters_count')
+                    ->label('Parámetros')
+                    ->counts('parameters')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('published_at')
-                    ->dateTime()
+                    ->date('d/m/Y H:i')
+                    ->placeholder('—')
                     ->sortable(),
-                TextColumn::make('published_by')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
+                    ->since()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                //
-            ])
+            ->defaultSort('version')
+            ->modifyQueryUsing(fn ($query) => $query->withUnverifiedCount())
             ->recordActions([
+                Action::make('parameters')
+                    ->label('Parámetros')
+                    ->icon('heroicon-o-adjustments-horizontal')
+                    ->url(fn ($record): string => ParameterSetResource::getUrl('edit', ['record' => $record])),
+
                 EditAction::make(),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            // No delete action anywhere: spec §5.1 says sets are never deleted,
+            // because saved calculations reference them.
+            ->toolbarActions([]);
     }
 }

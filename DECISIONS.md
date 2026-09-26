@@ -117,3 +117,59 @@ públicos llevan ETag, spec §7.1).
 **Consecuencias.** Los orígenes de local, staging y producción difieren solo por
 entorno. `SANCTUM_STATEFUL_DOMAINS` sigue siendo la pieza que habilita la
 autenticación por cookie entre `olivarcalc.es` y `api.olivarcalc.es`.
+
+---
+
+## ADR-0006 — Filament 5 moved every action to `Filament\Actions\`
+
+**Contexto.** Building the admin resources (spec §9) against Filament 5.8
+produced a batch of classes that do not exist: `Filament\Tables\Actions\Action`,
+`Filament\Tables\Actions\CreateAction`, `Filament\Schemas\Components\Placeholder`,
+and `Panel::navigationSort()`.
+
+**Decisión.** Use `Filament\Actions\*` for row, bulk, header and create actions,
+`Filament\Forms\Components\Placeholder` for read-only form content, and
+`NavigationGroup` + `NavigationItem` for navigation. No shims.
+
+**Consecuencias.** The Filament 5 upgrade moved the whole action surface out of
+the `Tables` and `Schemas` namespaces. A `use` statement copied from a
+Filament 4 tutorial will not resolve.
+
+Two related traps that cost real time:
+
+- **`NavigationGroup::items()` wants `NavigationItem[]`, not resource class
+  strings.** Pass `NavigationItem::make(ArticleResource::class)`.
+- **`money()` takes `(currency, divideBy, locale, decimalPlaces)`.** The third
+  argument is a locale string, not a separator pair, and `divideBy` is `1` for a
+  value already in euros per tonne.
+
+---
+
+## ADR-0007 — A parameter set has no delete action anywhere
+
+**Contexto.** The `make:filament-resource` scaffolding adds a `DeleteAction` to
+the edit page and a `DeleteBulkAction` to the list toolbar.
+
+**Decisión.** Both removed, and a test asserts the absence.
+
+**Consecuencias.** Spec §5.1: parameter sets are never deleted, because saved
+calculations store `parameter_set_id` and `calc_version`. A deleted set would
+make an old settlement unexplainable. Publishing archives the previous set
+instead. The same reasoning does not apply to articles, which are soft-deleted
+and restorable.
+
+---
+
+## ADR-0008 — `CheckPriceAlerts` is not wired yet, on purpose
+
+**Contexto.** Spec §8 says publishing prices fires an event that evaluates price
+alerts and requests a site rebuild. `OilPricesPublished` exists and is dispatched
+from the panel.
+
+**Decisión.** Only `RequestSiteRebuild` is wired. `CheckPriceAlerts` lands in
+Fase 5.
+
+**Consecuencias.** A listener that exists but does nothing is worse than no
+listener: it looks like notifications are being sent. There are no alerts in the
+MVP yet (the table is empty and no user can create one), so nothing is silently
+dropped. The event carries a comment saying exactly this.

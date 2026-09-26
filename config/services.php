@@ -1,6 +1,13 @@
 <?php
 
 return [
+    /**
+     * Cloudflare Pages deploy hook. Fired by RequestSiteRebuild when content is
+     * published, so the static site picks up the change (spec §8).
+     */
+    'cloudflare' => [
+        'deploy_hook_url' => env('CLOUDFLARE_PAGES_DEPLOY_HOOK_URL'),
+    ],
 
     /*
     |--------------------------------------------------------------------------

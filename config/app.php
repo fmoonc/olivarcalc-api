@@ -52,6 +52,10 @@ return [
     |
     */
 
+    // Base URL of the Astro site. Used to build links from the admin panel
+    // to the public pages (spec §13.5 FRONTEND_URL).
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:4321'),
+
     'url' => env('APP_URL', 'http://localhost'),
 
     /*

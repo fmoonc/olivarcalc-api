@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ParameterSetStatus;
 use Carbon\CarbonImmutable;
 use Database\Factories\ParameterSetFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property ParameterSetStatus $status
  * @property string|null $notes
  * @property CarbonImmutable|null $published_at
+ * @property int $unverified_count Only present after scopeWithUnverifiedCount()
  */
 class ParameterSet extends Model
 {
@@ -93,5 +95,20 @@ class ParameterSet extends Model
             ->sort()
             ->values()
             ->all();
+    }
+
+    /**
+     * Eager-loads `unverified_count`, so the admin list and the dashboard can
+     * show how much work is left before a set can go live (spec §5.2) without
+     * an N+1 per row.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeWithUnverifiedCount(Builder $query): Builder
+    {
+        return $query->withCount([
+            'parameters as unverified_count' => fn (Builder $q) => $q->where('verified', false),
+        ]);
     }
 }

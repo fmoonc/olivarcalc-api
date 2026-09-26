@@ -21,17 +21,14 @@ use Illuminate\Database\Seeder;
 class ParameterSetSeeder extends Seeder
 {
     /**
-     * Provinces seeded with a daily wage row, per spec §5.2.
+     * Display names for the seeded wage rows, keyed by the province slug.
      *
-     * Keys, not display names: a parameter key has to survive URL encoding,
-     * dot-paths and JSON, so "Ciudad Real" becomes `ciudad_real`.
+     * The keys, not the display names, go into the parameter key: a key has to
+     * survive URL encoding, dot-paths and JSON, so "Ciudad Real" becomes
+     * `ciudad_real` (spec §5.2).
+     *
+     * @var array<string, string>
      */
-    private const PROVINCES = [
-        'jaen', 'cordoba', 'granada', 'sevilla', 'malaga',
-        'badajoz', 'ciudad_real', 'toledo',
-    ];
-
-    /** Display names, only used in the source label. */
     private const PROVINCE_LABELS = [
         'jaen' => 'Jaén',
         'cordoba' => 'Córdoba',
@@ -95,8 +92,9 @@ class ParameterSetSeeder extends Seeder
         }
 
         // Wages are per province and per category, and the value depends on the
-        // convenio vigente, so they are seeded empty as well.
-        foreach (self::PROVINCES as $province) {
+        // convenio vigente, so they are seeded empty as well. Iterating the label
+        // map keeps the key a plain string for the lookup below.
+        foreach (array_keys(self::PROVINCE_LABELS) as $province) {
             $set->parameters()->updateOrCreate(
                 ['key' => "wages.{$province}.peon.daily_eur"],
                 [
@@ -105,7 +103,7 @@ class ParameterSetSeeder extends Seeder
                     'unit' => '€/día',
                     'verified' => false,
                     'source_label' => 'Convenio colectivo del campo de '
-                        .(self::PROVINCE_LABELS[$province] ?? $province).' (BOP)',
+                        .self::PROVINCE_LABELS[$province].' (BOP)',
                     'source_url' => null,
                     'notes' => 'TODO: verificar el jornal vigente en el BOP provincial.',
                 ],

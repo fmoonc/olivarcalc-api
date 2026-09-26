@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ParameterSets;
 use App\Filament\Resources\ParameterSets\Pages\CreateParameterSet;
 use App\Filament\Resources\ParameterSets\Pages\EditParameterSet;
 use App\Filament\Resources\ParameterSets\Pages\ListParameterSets;
+use App\Filament\Resources\ParameterSets\RelationManagers\ParametersRelationManager;
 use App\Filament\Resources\ParameterSets\Schemas\ParameterSetForm;
 use App\Filament\Resources\ParameterSets\Tables\ParameterSetsTable;
 use App\Models\ParameterSet;
@@ -33,7 +34,7 @@ class ParameterSetResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            ParametersRelationManager::class,
         ];
     }
 

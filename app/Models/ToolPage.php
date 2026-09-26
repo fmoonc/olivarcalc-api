@@ -40,4 +40,22 @@ class ToolPage extends Model
             'faq' => 'array',
         ];
     }
+
+    /**
+     * The public route slug of this tool, as used in /herramientas/<slug>.
+     *
+     * The API stores the technical key (spec §6) while the site uses Spanish
+     * slugs for SEO (spec §10.2), so the admin panel needs the translation to
+     * build a "view on site" link.
+     */
+    public function getRouteKey(): string
+    {
+        return match ($this->tool_key) {
+            'settlement' => 'liquidacion-aceituna',
+            'yield_converter' => 'rendimiento-aceituna',
+            'cost_per_hectare' => 'coste-olivar-hectarea',
+            'harvest_crew' => 'coste-cuadrilla-recogida',
+            default => (string) $this->tool_key,
+        };
+    }
 }
