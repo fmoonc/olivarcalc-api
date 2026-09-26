@@ -25,14 +25,20 @@ class CategoriesTable
                     ->weight('bold')
                     ->description(fn ($record): ?string => $record->slug),
 
-                TextColumn::make('publishedArticlesCount')
+                TextColumn::make('published_count')
                     ->label('Guías')
-                    // A model method rather than counts(): the API only serves
-                    // published guides, so a raw count would overstate it.
+                    // A subquery alias, not a model method: Filament treats any
+                    // method matching the column name as a relationship and
+                    // throws "must return a relationship instance".
                     ->badge(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
+            // Published guides only: the public API filters drafts, so a raw
+            // count would overstate what a visitor sees (spec §7.2).
+            ->modifyQueryUsing(fn ($query) => $query->withCount([
+                'articles as published_count' => fn ($q) => $q->where('status', 'published'),
+            ]))
             ->headerActions([
                 CreateAction::make()->label('Nueva categoría'),
             ])

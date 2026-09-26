@@ -8,7 +8,12 @@ use App\Filament\Resources\ParameterSets\ParameterSetResource;
 use App\Filament\Resources\SiteRebuildRequests\SiteRebuildRequestResource;
 use App\Filament\Resources\ToolPages\ToolPageResource;
 use App\Filament\Resources\Users\UserResource;
+use App\Models\AffiliateProduct;
+use App\Models\Article;
+use App\Models\Category;
+use App\Models\OilPrice;
 use App\Models\ParameterSet;
+use App\Models\SiteRebuildRequest;
 use App\Models\ToolPage;
 use App\Models\User;
 
@@ -25,19 +30,28 @@ describe('admin panel screens', function () {
         $this->admin = User::factory()->admin()->create();
     });
 
-    it('renders every resource index for an admin', function (string $resource) {
+    /**
+     * Renders each index with a record present.
+     *
+     * The row matters: with an empty table Filament never evaluates a column,
+     * so a broken `state()` or a method treated as a relationship goes
+     * unnoticed. That is exactly how the categories table shipped a 500.
+     */
+    it('renders every resource index with a record, for an admin', function (string $resource, Closure $seed) {
+        $seed();
+
         $this->actingAs($this->admin)
             ->get($resource::getUrl('index'))
             ->assertSuccessful();
     })->with([
-        ParameterSetResource::class,
-        OilPriceResource::class,
-        ArticleResource::class,
-        CategoryResource::class,
-        ToolPageResource::class,
-        AffiliateProductResource::class,
-        UserResource::class,
-        SiteRebuildRequestResource::class,
+        'conjuntos' => [ParameterSetResource::class, fn () => ParameterSet::factory()->create()],
+        'precios' => [OilPriceResource::class, fn () => OilPrice::factory()->create()],
+        'articulos' => [ArticleResource::class, fn () => Article::factory()->create()],
+        'categorias' => [CategoryResource::class, fn () => Category::factory()->create()],
+        'paginas de herramienta' => [ToolPageResource::class, fn () => ToolPage::factory()->create()],
+        'afiliados' => [AffiliateProductResource::class, fn () => AffiliateProduct::factory()->create()],
+        'usuarios' => [UserResource::class, fn () => User::factory()->create()],
+        'reconstrucciones' => [SiteRebuildRequestResource::class, fn () => SiteRebuildRequest::factory()->create()],
     ]);
 
     it('renders the parameter set edit page with its relation manager', function () {

@@ -173,3 +173,26 @@ Fase 5.
 listener: it looks like notifications are being sent. There are no alerts in the
 MVP yet (the table is empty and no user can create one), so nothing is silently
 dropped. The event carries a comment saying exactly this.
+
+---
+
+## ADR-0009 — A Filament column name must not match a model method
+
+**Contexto.** `ArticleResource` was working, then `/admin/categories` returned
+500 with `App\Models\Category::publishedArticlesCount must return a relationship
+instance`. The offending code was a column counting published guides, which had
+been moved onto a model method to work around `counts()` not accepting a
+constraint.
+
+**Decisión.** Use a `withCount` subquery aliased to a name that is not a model
+method, applied through `modifyQueryUsing()`.
+
+**Consecuencias.** Filament treats any method whose name matches a column as a
+relationship to eager-load, so a helper method with a column-like name throws at
+render time. Keep computed values in subquery aliases.
+
+**The more important lesson is about the tests.** The suite was green while the
+page was broken, because every panel test rendered an *empty* table, and Filament
+never evaluates a column when there are no rows. The panel tests now create a
+record per resource before asserting. A 200 from an empty table proves only that
+the route resolves, not that the screen works.

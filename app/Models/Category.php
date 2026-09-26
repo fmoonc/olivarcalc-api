@@ -38,15 +38,4 @@ class Category extends Model
     {
         return $this->hasMany(Article::class);
     }
-
-    /**
-     * Published guides only.
-     *
-     * The public API filters drafts, so counting all of them would overstate
-     * what a visitor actually sees (spec §7.2).
-     */
-    public function publishedArticlesCount(): int
-    {
-        return $this->articles()->where('status', 'published')->count();
-    }
 }
