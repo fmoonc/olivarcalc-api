@@ -251,13 +251,16 @@ describe('GET /api/v1/articles', function () {
 });
 
 describe('GET /api/v1/articles/{slug}', function () {
-    it('returns the full guide with body and FAQ', function () {
-        $article = Article::factory()->create(['slug' => 'indice-corrector']);
+    it('returns the full guide with body and FAQ, unwrapped', function () {
+        Article::factory()->create(['slug' => 'indice-corrector']);
 
         $this->getJson('/api/v1/articles/indice-corrector')
             ->assertOk()
-            ->assertJsonPath('data.slug', 'indice-corrector')
-            ->assertJsonStructure(['data' => ['body_markdown', 'faq', 'meta_title']]);
+            // No `data` envelope: a single object does not need one, and the
+            // web reads `.faq` straight off the response.
+            ->assertJsonMissingPath('data')
+            ->assertJsonPath('slug', 'indice-corrector')
+            ->assertJsonStructure(['body_markdown', 'faq', 'meta_title']);
     });
 
     it('404s for an unknown slug', function () {
@@ -266,13 +269,14 @@ describe('GET /api/v1/articles/{slug}', function () {
 });
 
 describe('GET /api/v1/tool-pages/{tool_key}', function () {
-    it('returns the SEO copy for a tool', function () {
+    it('returns the SEO copy for a tool, unwrapped', function () {
         ToolPage::factory()->create(['tool_key' => 'settlement']);
 
         $this->getJson('/api/v1/tool-pages/settlement')
             ->assertOk()
-            ->assertJsonPath('data.tool_key', 'settlement')
-            ->assertJsonStructure(['data' => ['title', 'intro_markdown', 'body_markdown', 'faq']]);
+            ->assertJsonMissingPath('data')
+            ->assertJsonPath('tool_key', 'settlement')
+            ->assertJsonStructure(['title', 'intro_markdown', 'body_markdown', 'faq']);
     });
 
     it('404s for an unknown tool', function () {

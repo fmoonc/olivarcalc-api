@@ -26,4 +26,7 @@ class ArticleDetailResource extends JsonResource
             'reviewed_at' => $this->reviewed_at?->toIso8601String(),
         ]);
     }
+
+    /** Unwrapped, like ParameterSetResource. See that class for the reasoning. */
+    public static $wrap = null;
 }

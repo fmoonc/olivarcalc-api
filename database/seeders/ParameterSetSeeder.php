@@ -20,10 +20,27 @@ use Illuminate\Database\Seeder;
  */
 class ParameterSetSeeder extends Seeder
 {
-    /** Provinces seeded with a daily wage row, per spec §5.2. */
+    /**
+     * Provinces seeded with a daily wage row, per spec §5.2.
+     *
+     * Keys, not display names: a parameter key has to survive URL encoding,
+     * dot-paths and JSON, so "Ciudad Real" becomes `ciudad_real`.
+     */
     private const PROVINCES = [
         'jaen', 'cordoba', 'granada', 'sevilla', 'malaga',
-        'badajoz', 'ciudad real', 'toledo',
+        'badajoz', 'ciudad_real', 'toledo',
+    ];
+
+    /** Display names, only used in the source label. */
+    private const PROVINCE_LABELS = [
+        'jaen' => 'Jaén',
+        'cordoba' => 'Córdoba',
+        'granada' => 'Granada',
+        'sevilla' => 'Sevilla',
+        'malaga' => 'Málaga',
+        'badajoz' => 'Badajoz',
+        'ciudad_real' => 'Ciudad Real',
+        'toledo' => 'Toledo',
     ];
 
     public function run(): void
@@ -87,7 +104,8 @@ class ParameterSetSeeder extends Seeder
                     'value_type' => 'decimal',
                     'unit' => '€/día',
                     'verified' => false,
-                    'source_label' => "Convenio colectivo del campo de {$province} (BOP)",
+                    'source_label' => 'Convenio colectivo del campo de '
+                        .(self::PROVINCE_LABELS[$province] ?? $province).' (BOP)',
                     'source_url' => null,
                     'notes' => 'TODO: verificar el jornal vigente en el BOP provincial.',
                 ],

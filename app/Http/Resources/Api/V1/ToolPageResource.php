@@ -25,4 +25,11 @@ class ToolPageResource extends JsonResource
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
+
+    /**
+     * Unwrapped, like ParameterSetResource: a single object needs no `data`
+     * envelope, and the web reads `.faq` directly. Collections keep the
+     * standard shape (spec §7.1).
+     */
+    public static $wrap = null;
 }
