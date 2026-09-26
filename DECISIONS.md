@@ -196,3 +196,92 @@ page was broken, because every panel test rendered an *empty* table, and Filamen
 never evaluates a column when there are no rows. The panel tests now create a
 record per resource before asserting. A 200 from an empty table proves only that
 the route resolves, not that the screen works.
+
+---
+
+## ADR-0011 — What was actually verified among the 21 parameters, and what was not
+
+**Contexto.** Spec §5.2 seeds 21 parameters with `verified = false` and the owner
+checks each one. Rather than guess, the two that could be settled from primary
+law were read off the consolidated text of **Ley 37/1992** (BOE-A-1992-28740,
+last updated 28/02/2026).
+
+**Settled, now seeded verified with their article:**
+
+| key | value | source |
+|---|---|---|
+| `vat.reagp_compensation_pct` | 12 | art. 130.5.1.º, verbatim: «El 12 por 100, en las entregas de productos naturales obtenidos en explotaciones agrícolas o forestales» |
+| `vat.olive_general_rate_pct` | 10 | art. 91.Uno.1.1.º (produce for human nutrition) and 1.2.º (the vegetables used to obtain it, i.e. the olives sent to the mill) |
+
+The second one was a `TODO` in the spec. Until it had a value, a grower paying
+under the general regime got *"El parámetro ... todavía no tiene valor
+confirmado"* instead of a settlement, so this is a working tool again, not just
+a tidier record.
+
+**Left unverified, on purpose.** The other 19 fall into three groups, and none
+of them is "a number I could not be bothered to look up":
+
+- **Volatile by nature** — the 8 provincial wages and `labor.employer_cost_pct`
+  change every January or every season. Verifying them would rot.
+- **Not a single figure** — the 6 cost presets are per comarca and per campaign,
+  so there is no one defensible number for Andalucía.
+- **Not law** — `campaign.start_month_day` is a sector convention, and
+  `oil.density_kg_per_l` is a physical constant the spec sourced to a
+  "referencia técnica" rather than a norm.
+
+Each of the 19 now carries a note in Filament saying which article or bulletin
+to open, and where there is a trap: the wage paid on olives is usually the
+*plus de recolección*, not the convenio's base salary, and it is revised
+mid-season.
+
+**`source_url` was deliberately left empty on all 19.** It means "this value came
+from here", and the panel renders it as a link on verified rows. Filling it with
+"go and look here" would attach a source to figures that have none. The
+where-to-look belongs in `notes`, which is not exposed by the public API.
+
+**Open question, flagged not fixed.** `irpf.withholding_base_includes_vat` is
+seeded `false` by the spec and I believe it should be `true`: for deliveries of
+goods the withholding base should include indirect taxes. I could not reach art.
+95 of the Reglamento del IRPF (RD 439/2007) — the BOE consolidated view and
+EUR-Lex both refused — so it stays as the spec has it, with the impact written
+into the note. On the 10.000 kg reference case the retention goes from 87,20 €
+to 97,66 €, a 12 % difference the grower feels.
+
+**Consequence.** The §4.3 warning still shows, correctly: 19 figures are still
+the owner's to confirm. The two that are no longer in doubt stop being treated
+as such, and the seeder ships them verified so a fresh environment matches the
+live one instead of warning about figures nobody doubts.
+
+---
+
+## ADR-0012 — The seeder only ever writes to a draft
+
+**Contexto.** Two bugs, both found while trying to record a verified figure, and
+both of the same shape: the seeder wrote to a version it did not own.
+
+1. `ParameterSetSeeder` used `updateOrCreate`, which reset `status`. Re-seeding
+   silently demoted the **published** set to a draft and left a stale
+   `published_at` on it. Nothing in the app broke loudly; the site just stopped
+   having a live parameter set.
+2. "Duplicar el vigente" in the panel passed Eloquent models to `createMany()`,
+   which only accepts arrays, so the action died with a `TypeError` the first
+   time anyone pressed it. It had never been exercised.
+
+A third, quieter one: re-seeding reset `verified` to false, which would have
+discarded the owner's verification work.
+
+**Decisión.**
+
+- The seeder writes only to a **draft**. A published or archived set is left
+  byte-for-byte alone and the seeder says so out loud.
+- A **verified parameter is never modified** by the seeder — value, provenance
+  and note. If the owner has verified a row, that row is theirs.
+- Duplicating is `App\Actions\DuplicateParameterSet`, which the Filament action
+  and the console both call, rather than logic living in a page class.
+- Corrections arrive as a new version (`2026-27.1` → `2026-27.2`), which is what
+  §5.1 already required and what the two verified figures did.
+
+**Consecuences.** `tests/Feature/ParameterSetVersioningTest.php` pins all of it:
+the copy reassigns its foreign key, the version increments, the published set
+survives untouched, a re-seed cannot take a set offline or rewrite history, and
+the undefendable values stay empty rather than plausible.

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ParameterSets\Pages;
 
+use App\Actions\DuplicateParameterSet;
 use App\Actions\PublishParameterSet;
 use App\Enums\ParameterSetStatus;
 use App\Filament\Resources\ParameterSets\ParameterSetResource;
@@ -41,14 +42,7 @@ class ListParameterSets extends ListRecords
                         return;
                     }
 
-                    $copy = $current->replicate(['version', 'status', 'published_at', 'published_by']);
-                    $copy->version = $this->nextVersion($current->version);
-                    $copy->status = ParameterSetStatus::Draft;
-                    $copy->save();
-
-                    $copy->parameters()->createMany(
-                        $current->parameters->map(fn ($p) => $p->replicate())->all()
-                    );
+                    $copy = app(DuplicateParameterSet::class)->handle($current);
 
                     ParameterSetResource::getUrl('edit', ['record' => $copy]);
                 })
@@ -72,16 +66,6 @@ class ListParameterSets extends ListRecords
             PublishAction::make('publish'),
             EditAction::make(),
         ];
-    }
-
-    /** "2026-27.1" -> "2026-27.2" */
-    private function nextVersion(string $current): string
-    {
-        if (preg_match('/^(?<base>.+)\.(?<n>\d+)$/', $current, $m) === 1) {
-            return $m['base'].'.'.((int) $m['n'] + 1);
-        }
-
-        return $current.'.1';
     }
 }
 
