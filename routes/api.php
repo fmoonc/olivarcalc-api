@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\BuildManifestController;
 use App\Http\Controllers\Api\V1\ContentController;
+use App\Http\Controllers\Api\V1\IndexQuoteController;
 use App\Http\Controllers\Api\V1\OilPriceController;
 use App\Http\Controllers\Api\V1\ParameterController;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,12 @@ Route::prefix('v1')->group(function (): void {
         ->name('api.v1.oil-prices.latest');
     Route::get('oil-prices/campaigns/{campaign}/summary', [OilPriceController::class, 'campaignSummary'])
         ->name('api.v1.oil-prices.campaign-summary');
+
+    // POOLred's weekly variation for its four indices. Kept apart from the price
+    // series because it is a percentage, not a €/tonne, and because these four
+    // carry their names rather than ours.
+    Route::get('index-quotes/latest', [IndexQuoteController::class, 'latest'])
+        ->name('api.v1.index-quotes.latest');
 
     // Editorial content.
     Route::get('categories', [ContentController::class, 'categories'])

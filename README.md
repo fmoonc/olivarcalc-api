@@ -46,6 +46,7 @@ usuarios con `role = 'admin'`).
 | `make analyse` | Larastan nivel 6 |
 | `make ci` | `lint` → `analyse` → `test`, el orden de GitHub Actions |
 | `make openapi` | Exporta el contrato a `storage/app/openapi.json` |
+| `php artisan poolred:import --days=365` | Importa el índice iPOOL de POOLred (inactivo sin `POOLRED_IMPORT_ENABLED=true`) |
 | `make routes` | Lista de rutas |
 | `make migrate-fresh` | Borra, migra y siembra |
 
@@ -65,6 +66,24 @@ php artisan test --filter="stores the users table as utf8mb4"
   como número JSON (spec §7.1).
 - Directorios por capa, según spec §3.2: `app/Http/{Controllers,Requests,Resources}/Api/V1`,
   `app/Actions`, `app/Services/{ExpoPush,SiteRebuild,Poolred}`, `app/Filament`.
+
+### Datos de mercado
+
+Los precios no son nuestros: vienen del **índice iPOOL de la Fundación del Olivar
+(POOLred)**, y la web los republica con atribución. Dos consecuencias que conviene
+tener presentes al tocar este código:
+
+- `oil_prices` guarda el índice **Extra**, agregado por semana a partir de la serie
+  diaria, con `source = 'poolred'`. `volume_t` queda `null` porque su dato público no
+  trae volumen. `provisional` refleja su propio `isFinalized`.
+- `oil_index_quotes` guarda la **variación** de los cuatro índices. Es un
+  porcentaje, no un €/tonelada, y por eso va en su propia tabla. Sus nombres
+  (`virgenExtra`, `virgen`, `lampante`, `nacional`) son los de POOLred, no los
+  nuestros, y se guardan tal cual.
+
+Los tres índices que exigen un token de sesión **no se piden**, aunque funcione:
+rota por sesión y usarlo sería esquivar un control de acceso. Hay dos tests que lo
+impiden y un ADR que lo explica. Si POOLred concede una API key, se añade ahí.
 - `parameter_sets` se archivan, **no se borran**: los cálculos guardados los
   referencian (spec §5.1).
 

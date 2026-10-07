@@ -285,3 +285,84 @@ discarded the owner's verification work.
 the copy reassigns its foreign key, the version increments, the published set
 survives untouched, a re-seed cannot take a set offline or rewrite history, and
 the undefendable values stay empty rather than plausible.
+
+---
+
+## ADR-0013 — POOLred: only the two endpoints that need no credentials
+
+**Contexto.** Spec §8 said not to write the importer until the owner confirmed the
+terms of use. The owner confirmed on **2026-10-07**, which satisfies the gate, and
+then asked for a scraper against poolred.com. Investigating that turned up more
+than the spec anticipated.
+
+**What POOLred actually exposes.**
+
+| Endpoint | Credential | Yields |
+|---|---|---|
+| `api.poolred.com/v1/ipool/extra?period=…` | none | 366 daily index points, a full year |
+| `poolred.com/wp-json/poolred-ticker/v1/datos` | none | weekly variation, all four indices |
+| `api.poolred.com/v1/ipool/{virgen,vl1,espania}` | **session token** | daily series |
+
+The first two are public REST APIs; the second is WordPress's own ticker. Neither
+is scraping. The prices are not in poolred.com's HTML at all: they load from
+`ui.poolred.com`, a Vue app whose HTML is an empty shell.
+
+**The token, and why it is not used.** The public widget sends a JWT with
+`role: "public"` in its bundle. It was captured during development and it works.
+It is not used, for three reasons in order of weight:
+
+1. `extra` answering without a token while the other three do not is a deliberate
+   line. Readable in client code is not the same as licensed for server-side reuse.
+2. **It rotates per session.** Measured: a token captured and replayed immediately
+   returns 200; the same token from a previous run returns 401. An importer built
+   on it would break on its own, with no way to tell a stale token from being blocked.
+3. The index belongs to a foundation whose members are the cooperatives and growers
+   this site is written for. Replaying a session token to republish their commercial
+   data is the most likely way to lose both the feed and the relationship.
+
+The fix is an API key, which is one email. Two tests pin the decision: one asserts
+no `Authorization` header is ever sent, the other that only `/ipool/extra` is
+requested.
+
+**What ships.** `poolred:import`, cron `0 0,12 * * *`, inert unless
+`POOLRED_IMPORT_ENABLED=true`. The daily series is averaged per calendar week into
+`oil_prices` with `source = 'poolred'`; the four variations go to a new
+`oil_index_quotes` table because a percentage is not a €/tonne and does not belong
+in a DECIMAL money column. `volume_t` stays null because their public data has no
+volume. `provisional` mirrors their own `isFinalized` rather than deciding.
+
+**Three findings worth recording.**
+
+- POOLred's two endpoints disagree on units: the REST series returns a fraction
+  (`-0.0685`) and the ticker a percentage (`-6.85`). Scaling the second turned a
+  6.85 % fall into 685 %, caught only by printing the stored value. A test pins it.
+- POOLred labels provisional data *"95 % de confianza"*, so `provisional` on our
+  side is their judgement, not ours.
+- Weekly averaging is deliberate: an index is a level, not a trade count, so a
+  grower reading "that week's price" wants the level it held at, not Friday's close.
+
+**The fabricated data is gone.** The 24 invented rows are deleted, and the page is
+retitled "Índice iPOOL del aceite de oliva" with the Fundación del Olivar named as
+the Dataset creator. It says what it is — a market index, not an official quotation
+or a Lonjas price — because calling someone else's index "el precio del aceite"
+would misrepresent it and them.
+
+---
+
+## ADR-0014 — The chart picks its default from the data it is given
+
+**Contexto.** `PriceChart` defaulted to `virgin`. The old price page happened to
+carry all three qualities, so nobody noticed. The POOLred page carries only
+`extra`, and the chart rendered "No hay datos para esta calidad" with no way back —
+no chart, and the quality tabs still offered two selections that showed nothing.
+
+**Decisión.** Derive both the default quality and the tab list from the series the
+component receives. A page that ships one index plots that index, and a page that
+ships three still offers three tabs. The caption also follows the data's own
+`source`, so a POOLred index describes itself as an index.
+
+Cheaper than the alternatives: defaulting to "whichever exists" was the same
+decision with the failure mode left in. Removing the tabs outright would have
+thrown away real functionality for a future page that does have three qualities.
+
+**Consequence.** Two E2E tests cover it, including the absence of dead tabs.
