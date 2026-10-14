@@ -110,7 +110,18 @@ return [
      * ],
      * ```
      */
-    'servers' => null,
+    'servers' => [
+        // The published contract, not the machine that generated it.
+        //
+        // Left as null, Scramble derives the server from APP_URL, so the same
+        // migrations produced `127.0.0.1` locally and `localhost` on CI and the
+        // web repo's "client is out of date" check failed on the word `localhost`
+        // instead of on anything that had actually changed. A contract that names
+        // a loopback address is also not the contract the world consumes.
+        //
+        // Override with API_CONTRACT_URL when deploying somewhere else.
+        'Prod' => env('API_CONTRACT_URL', 'https://olivarcalc.es/api'),
+    ],
 
     /**
      * Determines how Scramble stores the descriptions of enum cases.
