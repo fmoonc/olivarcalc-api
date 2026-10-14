@@ -1,0 +1,11 @@
+# Tests unitarios
+
+Este directorio lo declara `phpunit.xml` como testsuite `Unit` y Laravel lo da por
+supuesto. Git no rastrea directorios vacíos, así que sin este archivo el
+directorio desaparecería en cada clon y el CI fallaría con:
+
+    Test directory "tests/Unit" not found.
+
+De momento toda la suite vive en `tests/Feature`, porque lo que hay aquí prueba
+comportamiento contra base de datos y Filament, no funciones puras. Este `.gitkeep`
+solo mantiene el directorio en el repo.
