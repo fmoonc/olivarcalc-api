@@ -61,6 +61,13 @@ jobs:
       - name: Copy environment
         run: cp .env.example .env
 
+      # A key has to exist before anything that touches the session or the
+      # encrypter. The Filament tests failed with MissingAppKeyException 47 times
+      # on the first run because the local .env already had one and CI's did not:
+      # .env.example ships APP_KEY= empty on purpose, so nobody inherits a real key.
+      - name: Generate the application key
+        run: php artisan key:generate --force
+
       # 1. Pint
       - name: Lint (Pint)
         run: composer lint
