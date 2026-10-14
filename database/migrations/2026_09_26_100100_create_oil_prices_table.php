@@ -13,6 +13,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('oil_prices', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->date('week_start');
             $table->date('week_end');

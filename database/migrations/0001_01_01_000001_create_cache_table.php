@@ -12,12 +12,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cache', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->string('key')->primary();
             $table->mediumText('value');
             $table->bigInteger('expiration')->index();
         });
 
         Schema::create('cache_locks', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->string('key')->primary();
             $table->string('owner');
             $table->bigInteger('expiration')->index();

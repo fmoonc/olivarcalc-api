@@ -14,6 +14,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('parameter_sets', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->string('version')->unique();
             $table->string('campaign');
@@ -27,6 +31,10 @@ return new class extends Migration
         });
 
         Schema::create('parameters', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->foreignId('parameter_set_id')->constrained('parameter_sets')->cascadeOnDelete();
             $table->string('key');

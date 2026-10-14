@@ -25,19 +25,36 @@ it('mounts the admin panel login route', function () {
     $this->get('/admin/login')->assertSuccessful();
 });
 
-it('stores the users table as utf8mb4 with the spec collations', function () {
-    $connection = DB::connection();
-    $database = $connection->getDatabaseName();
+it('stores the tables as utf8mb4 with the spec collation', function () {
+    $database = DB::connection()->getDatabaseName();
 
+    // Spec §6 names utf8mb4 / utf8mb4_unicode_ci. This asserts the TABLES, not the
+    // database default, because the default collation of utf8mb4 changed in MySQL
+    // 8.0 to utf8mb4_0900_ai_ci: the same migrations then produced a different
+    // schema on CI than on a developer's machine. Every migration now declares the
+    // collation, so the tables do not depend on the server default at all.
+    $tables = DB::select(
+        'SELECT TABLE_NAME, TABLE_COLLATION FROM information_schema.TABLES
+           WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = ? ORDER BY TABLE_NAME',
+        [$database, 'BASE TABLE'],
+    );
+
+    expect($tables)->not->toBeEmpty();
+
+    foreach ($tables as $table) {
+        expect($table->TABLE_COLLATION, $table->TABLE_NAME)
+            ->toBe('utf8mb4_unicode_ci');
+    }
+
+    // The charset on the connection is still ours to set, and SQLite would not
+    // catch it either.
     $charset = DB::selectOne(
-        'SELECT DEFAULT_CHARACTER_SET_NAME AS cs, DEFAULT_COLLATION_NAME AS co
-           FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?',
+        'SELECT DEFAULT_CHARACTER_SET_NAME AS cs FROM information_schema.SCHEMATA
+           WHERE SCHEMA_NAME = ?',
         [$database],
     );
 
-    // Spec §6. A SQLite test run would never catch this.
-    expect($charset->cs)->toBe('utf8mb4')
-        ->and($charset->co)->toBe('utf8mb4_unicode_ci');
+    expect($charset->cs)->toBe('utf8mb4');
 });
 
 it('soft deletes users', function () {

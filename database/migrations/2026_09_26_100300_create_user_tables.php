@@ -13,6 +13,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('social_accounts', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->enum('provider', ['google', 'apple']);
@@ -24,6 +28,10 @@ return new class extends Migration
         });
 
         Schema::create('parcels', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name');
@@ -47,6 +55,10 @@ return new class extends Migration
          * cascades away the set.
          */
         Schema::create('saved_calculations', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('parcel_id')->nullable()->constrained()->nullOnDelete();
@@ -69,6 +81,10 @@ return new class extends Migration
         });
 
         Schema::create('price_alerts', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->enum('quality', ['extra', 'virgin', 'lampante']);
@@ -83,6 +99,10 @@ return new class extends Migration
         });
 
         Schema::create('push_tokens', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('expo_token')->unique();
@@ -97,6 +117,10 @@ return new class extends Migration
          * in the job; this table is the visible history the admin panel reads.
          */
         Schema::create('site_rebuild_requests', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->string('reason');
             $table->timestamp('requested_at');

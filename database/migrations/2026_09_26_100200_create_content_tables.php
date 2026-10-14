@@ -13,6 +13,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('categories', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->string('slug')->unique();
             $table->string('name');
@@ -22,6 +26,10 @@ return new class extends Migration
         });
 
         Schema::create('articles', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->string('slug')->unique();
             $table->string('title');
@@ -46,6 +54,10 @@ return new class extends Migration
         });
 
         Schema::create('tool_pages', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             // settlement | yield_converter | cost_per_hectare | harvest_crew ...
             $table->string('tool_key')->unique();
@@ -59,6 +71,10 @@ return new class extends Migration
         });
 
         Schema::create('affiliate_products', function (Blueprint $table) {
+            // Spec §6: declared per table so the schema does not depend on the
+            // server default, which changed in MySQL 8.0.
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->string('name');
             $table->string('category');
