@@ -85,8 +85,16 @@ jobs:
           REDIS_HOST: 127.0.0.1
 
       # 4. Export the contract the web monorepo consumes (spec §3.3)
+      # Scramble reflects on the model attributes, so it needs a live connection.
+      # Without these it read .env, pointed at the `olivarcalc` database that the
+      # MySQL service never creates, and failed with "Access denied ... to
+      # database 'olivarcalc'". Same credentials the Pest step above uses.
       - name: Export OpenAPI contract
         run: php artisan scramble:export --path=storage/app/openapi.json
+        env:
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: olivarcalc_test
+          REDIS_HOST: 127.0.0.1
 
       - name: Upload openapi.json
         uses: actions/upload-artifact@v4
